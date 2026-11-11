@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eric's NF1 Odds of Pathogenicity Calculator</title>
+  <style>
+    :root {
+      --ink: #17332e;
+      --muted: #536a63;
+      --paper: #f1f5ef;
+      --white: #ffffff;
+      --green: #1d6b55;
+      --green-dark: #124a3c;
+      --mint: #e3efe5;
+      --line: #d5e0d7;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 14px "Segoe UI", sans-serif; }
+    .shell { max-width: 1240px; margin: 0 auto; padding: 20px 24px 22px; }
+    header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 14px; }
+    .eyebrow { color: var(--green); font-size: 12px; font-weight: 700; }
+    h1 { margin: 4px 0 3px; font: 700 25px Georgia, serif; }
+    header p { margin: 0; color: var(--muted); font-size: 12px; }
+    .badge { background: var(--white); color: var(--green-dark); font: 700 16px Georgia, serif; border: 1px solid #777; padding: 10px 14px; }
+    .layout { display: grid; grid-template-columns: 11fr 9fr; gap: 20px; padding-top: 4px; align-items: start; }
+    .input-panel { background: var(--white); padding: 16px; }
+    .input-panel h2 { margin: 0 0 2px; font-size: 19px; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .input-panel > .muted { margin: 0 0 10px; }
+    fieldset { margin: 0 0 8px; padding: 9px 11px; border: 1px solid var(--line); }
+    legend { padding: 0 4px; color: var(--green-dark); font-weight: 700; font-size: 13px; }
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; margin: 7px 0; }
+    .row label { color: var(--muted); font-size: 12px; }
+    input { width: 100%; height: 32px; padding: 6px 8px; border: 1px solid #b9c6bc; background: #fbfcfa; color: var(--ink); font: inherit; }
+    input:focus { outline: 2px solid var(--green); outline-offset: -1px; }
+    .note { margin: 0 0 8px; padding: 9px 11px; background: #edf3f3; color: #3e565d; font-size: 12px; }
+    .actions { display: flex; align-items: center; gap: 8px; padding-top: 12px; }
+    .actions .muted { margin-left: 4px; }
+    button { padding: 8px 14px; border: 0; cursor: pointer; font: 700 13px "Segoe UI", sans-serif; }
+    button.primary { background: var(--green); color: var(--white); }
+    button.primary:hover:not(:disabled) { background: var(--green-dark); }
+    button.primary:disabled { background: #8ca99b; cursor: default; }
+    button.secondary { background: var(--mint); color: var(--green-dark); padding: 8px 12px; font-size: 12px; }
+    button.secondary:hover { background: #d3e5d6; }
+    .results { background: var(--white); border: 1px solid var(--line); }
+    .results-top { background: var(--green-dark); padding: 17px 19px; }
+    .results-top h2 { margin: 0; color: var(--white); font: 400 18px Georgia, serif; }
+    #result-status { margin-top: 4px; color: #c7d9d0; font-size: 12px; }
+    .results-body { padding: 16px 18px; }
+    .metric { margin: 6px 0; padding: 8px 11px; background: #f7faf6; }
+    .metric span { display: block; color: var(--muted); font-size: 12px; }
+    .metric strong { display: block; margin-top: 3px; font: 400 21px Georgia, serif; }
+    hr { margin: 8px 0 13px; border: 0; border-top: 1px solid var(--line); }
+    .threshold-title { margin: 0 0 5px; font-size: 13px; font-weight: 700; }
+    .threshold { display: grid; grid-template-columns: 80px 1fr 58px; align-items: center; gap: 8px; margin: 10px 0; }
+    .threshold > span { color: var(--muted); font-size: 12px; }
+    .threshold b { text-align: right; font-size: 12px; }
+    .bar { height: 10px; background: #e7eee8; }
+    .bar div { height: 100%; width: 0; background: var(--green); }
+    #discard-note { margin: 13px 0 8px; color: var(--muted); font-size: 12px; }
+    .progress { display: none; position: relative; height: 10px; margin-bottom: 12px; overflow: hidden; background: #e7eee8; }
+    .progress.active { display: block; }
+    .progress::after { content: ""; position: absolute; top: 0; bottom: 0; width: 30%; background: var(--green); animation: slide 1s linear infinite; }
+    @keyframes slide { from { left: -30%; } to { left: 100%; } }
+    .buttons { display: flex; gap: 8px; padding-top: 3px; }
+    dialog { max-width: 420px; padding: 0; border: 1px solid #777; background: var(--white); color: var(--ink); }
+    dialog::backdrop { background: rgba(0, 0, 0, .3); }
+    dialog h3 { margin: 0; padding: 10px 16px; background: var(--mint); color: var(--green-dark); font-size: 14px; }
+    dialog p { margin: 0; padding: 16px; font-size: 13px; }
+    dialog form { padding: 0 16px 14px; text-align: right; }
+    @media (max-width: 820px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <div class="eyebrow">VARIANT EVIDENCE · MONTE CARLO</div>
+        <h1>Eric's NF1 Odds of Pathogenicity Calculator</h1>
+        <p>Propagate uncertainty through de novo missense evidence and inspect OP and ACMG/ClinGen points.</p>
+      </div>
+      <div class="badge">NF1</div>
+    </header>
+
+    <div class="layout">
+      <section class="input-panel">
+        <h2>Model inputs</h2>
+        <p class="muted">Defaults mirror the command-line calculator.</p>
+        <div id="form"></div>
+        <div class="note">Lognormal SD follows the Python model: ln(upper bound / median) / 1.96. Lower bounds are displayed for reference and do not determine the SD.</div>
+        <div class="actions">
+          <button class="primary" id="calculate-button" type="button">Calculate</button>
+          <button class="secondary" id="reset-button" type="button">Reset defaults</button>
+          <span class="muted" id="input-status"></span>
+        </div>
+      </section>
+
+      <section class="results">
+        <div class="results-top">
+          <h2>Calculation results</h2>
+          <div id="result-status">Waiting for calculation</div>
+        </div>
+        <div class="results-body">
+          <div class="metric"><span>Median odds of pathogenicity</span><strong id="median-op">-</strong></div>
+          <div class="metric"><span id="op-hdi-title">95% HDI for OP</span><strong id="op-hdi">-</strong></div>
+          <div class="metric"><span>Median ACMG/ClinGen points</span><strong id="median-points">-</strong></div>
+          <div class="metric"><span id="points-hdi-title">95% HDI for points</span><strong id="points-hdi">-</strong></div>
+          <hr>
+          <div class="threshold-title">Probability of reaching each minimum point threshold</div>
+          <div class="threshold"><span>At least 8</span><div class="bar"><div id="bar-8"></div></div><b id="prob-8">-</b></div>
+          <div class="threshold"><span>At least 6</span><div class="bar"><div id="bar-6"></div></div><b id="prob-6">-</b></div>
+          <div class="threshold"><span>At least 4</span><div class="bar"><div id="bar-4"></div></div><b id="prob-4">-</b></div>
+          <div class="threshold"><span>At least 2</span><div class="bar"><div id="bar-2"></div></div><b id="prob-2">-</b></div>
+          <div id="discard-note">Results will appear here after the calculation.</div>
+          <div class="progress" id="progress"></div>
+          <div class="buttons">
+            <button class="secondary" id="save-button" type="button">Save report</button>
+            <button class="secondary" id="copy-button" type="button">Copy report</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="message-dialog">
+    <h3 id="message-title"></h3>
+    <p id="message-text"></p>
+    <form method="dialog"><button class="primary" autofocus>OK</button></form>
+  </dialog>
+
+  <script id="worker-source" type="text/plain">
+    function randomNormal() {
+      const u1 = Math.max(Math.random(), Number.EPSILON);
+      const u2 = Math.random();
+      return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+
+    function gammaSample(shape) {
+      if (shape < 1) return gammaSample(shape + 1) * Math.pow(Math.random(), 1 / shape);
+      const d = shape - 1 / 3;
+      const c = 1 / Math.sqrt(9 * d);
+      while (true) {
+        let x;
+        let v;
+        do {
+          x = randomNormal();
+          v = 1 + c * x;
+        } while (v <= 0);
+        v = v * v * v;
+        const u = Math.random();
+        if (u < 1 - 0.0331 * x * x * x * x || Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) {
+          return d * v;
+        }
+      }
+    }
+
+    function betaSample(alpha, beta) {
+      const x = gammaSample(alpha);
+      const y = gammaSample(beta);
+      return x / (x + y);
+    }
+
+    // Minimum-width sorted-window method on an already sorted array.
+    function hdi(sorted, credibility) {
+      const n = sorted.length;
+      const intervalIndex = Math.floor(credibility * n);
+      const intervals = n - intervalIndex;
+      if (intervals <= 0) return [sorted[0], sorted[n - 1]];
+      let bestIndex = 0;
+      let bestWidth = Infinity;
+      for (let i = 0; i < intervals; i += 1) {
+        const width = sorted[i + intervalIndex] - sorted[i];
+        if (width < bestWidth) {
+          bestWidth = width;
+          bestIndex = i;
+        }
+      }
+      return [sorted[bestIndex], sorted[bestIndex + intervalIndex]];
+    }
+
+    function median(sorted) {
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+
+    function simulate(p) {
+      const nSim = p.simulations;
+      const credibility = p.credibleInterval / 100;
+      const sigmaPrev = Math.log(p.prevHigh / p.prevMedian) / 1.96;
+      const sigmaBurden = Math.log(p.burdenHigh / p.burdenMedian) / 1.96;
+      const alphaDenovo = p.denovoN * p.denovoP;
+      const betaDenovo = p.denovoN * (1 - p.denovoP);
+      const alphaMissense = p.missenseN * p.missenseP;
+      const betaMissense = p.missenseN * (1 - p.missenseP);
+      const logOdds = new Float64Array(nSim);
+      let accepted = 0;
+
+      for (let i = 0; i < nSim; i += 1) {
+        const pDenovo = betaSample(alphaDenovo, betaDenovo);
+        const pMissense = betaSample(alphaMissense, betaMissense);
+        const prevalence = p.prevMedian * Math.exp(randomNormal() * sigmaPrev);
+        const muAllele = Math.pow(10, p.logMuMean + randomNormal() * p.logMuSd);
+        const burden = p.burdenMedian * Math.exp(randomNormal() * sigmaBurden);
+        const pBGivenA = pDenovo * pMissense;
+        const benignIndividuals = 2 * muAllele - prevalence * pBGivenA;
+        if (!(benignIndividuals > 0)) continue;
+        const pBGivenNonA = (benignIndividuals / 2) / burden;
+        logOdds[accepted] = Math.log(pBGivenA / pBGivenNonA);
+        accepted += 1;
+      }
+
+      if (accepted === 0) throw new Error("Every simulation was discarded; check the input estimates.");
+      const sortedLog = logOdds.slice(0, accepted).sort();
+      const scale = 8 / Math.log(350);
+      const sortedPoints = sortedLog.map((value) => value * scale);
+      const [loLog, hiLog] = hdi(sortedLog, credibility);
+      const [loPoints, hiPoints] = hdi(sortedPoints, credibility);
+      const thresholdProbabilities = [8, 6, 4, 2].map((threshold) => {
+        let count = 0;
+        for (let i = 0; i < accepted; i += 1) if (sortedPoints[i] >= threshold) count += 1;
+        return [threshold, count / accepted];
+      });
+      return {
+        medianOp: Math.exp(median(sortedLog)),
+        opHdi: [Math.exp(loLog), Math.exp(hiLog)],
+        medianPoints: median(sortedPoints),
+        pointsHdi: [loPoints, hiPoints],
+        thresholdProbabilities,
+        discarded: nSim - accepted,
+        accepted,
+        nSim,
+        credibility
+      };
+    }
+
+    self.onmessage = (event) => {
+      try {
+        self.postMessage({ result: simulate(event.data) });
+      } catch (error) {
+        self.postMessage({ error: error.message });
+      }
+    };
+  </script>
+
+  <script>
+    "use strict";
+
+    const FIELDS = [
+      ["Proportions", [
+        ["P(de novo | pathogenic)", "denovo_p", "0.5"],
+        ["Sample size for de novo proportion", "denovo_n", "1000"],
+        ["P(missense | pathogenic)", "missense_p", "0.19"],
+        ["Sample size for missense proportion", "missense_n", "3000"]
+      ]],
+      ["NF1 prevalence", [
+        ["Median prevalence", "prev_median", "0.0004"],
+        ["Lower plausible bound", "prev_low", "0.0003333333333333333"],
+        ["Upper plausible bound", "prev_high", "0.0005"]
+      ]],
+      ["De novo missense mutation rate", [
+        ["Mean log10 mutation rate", "log_mu_mean", "-4.137773"],
+        ["SD of log10 mutation rate", "log_mu_sd", "0.054"]
+      ]],
+      ["Rare non-pathogenic allele burden", [
+        ["Median allele frequency", "burden_median", "0.218"],
+        ["Lower plausible bound", "burden_low", "0.15"],
+        ["Upper plausible bound", "burden_high", "0.32"]
+      ]],
+      ["Simulation", [
+        ["Monte Carlo draws", "simulations", "500000"],
+        ["Credible interval (%)", "credible_interval", "95"]
+      ]]
+    ];
+
+    const entries = {};
+    let latestReport = "";
+    let worker = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function buildFields() {
+      const host = $("form");
+      for (const [sectionName, fields] of FIELDS) {
+        const group = document.createElement("fieldset");
+        const legend = document.createElement("legend");
+        legend.textContent = sectionName;
+        group.appendChild(legend);
+        for (const [label, key, defaultValue] of fields) {
+          const row = document.createElement("div");
+          row.className = "row";
+          const labelEl = document.createElement("label");
+          labelEl.textContent = label;
+          labelEl.htmlFor = `field-${key}`;
+          const input = document.createElement("input");
+          input.id = `field-${key}`;
+          input.type = "text";
+          input.autocomplete = "off";
+          input.spellcheck = false;
+          input.value = defaultValue;
+          if (key === "credible_interval") input.setAttribute("list", "credible-options");
+          row.append(labelEl, input);
+          group.appendChild(row);
+          entries[key] = input;
+        }
+        host.appendChild(group);
+      }
+      const options = document.createElement("datalist");
+      options.id = "credible-options";
+      for (const value of ["95", "99", "99.5"]) {
+        const option = document.createElement("option");
+        option.value = value;
+        options.appendChild(option);
+      }
+      host.appendChild(options);
+    }
+
+    function showMessage(title, text) {
+      $("message-title").textContent = title;
+      $("message-text").textContent = text;
+      $("message-dialog").showModal();
+    }
+
+    // Python formatting helpers, so values and reports match the Python program.
+    function pyFloat(text) {
+      const trimmed = text.trim();
+      if (/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(trimmed)) return Number(trimmed);
+      if (/^[+-]?(inf|infinity)$/i.test(trimmed)) return trimmed.startsWith("-") ? -Infinity : Infinity;
+      if (/^[+-]?nan$/i.test(trimmed)) return NaN;
+      throw new Error("Enter a valid number in every input field.");
+    }
+
+    function pyRepr(value) {
+      if (value === 0) return Object.is(value, -0) ? "-0.0" : "0.0";
+      const [mantissa, exponentText] = Math.abs(value).toExponential().split("e");
+      const exponent = Number(exponentText);
+      const digits = mantissa.replace(".", "");
+      const sign = value < 0 ? "-" : "";
+      if (exponent < -4 || exponent >= 16) {
+        const head = digits.length > 1 ? `${digits[0]}.${digits.slice(1)}` : digits;
+        const abs = Math.abs(exponent);
+        return `${sign}${head}e${exponent < 0 ? "-" : "+"}${abs < 10 ? "0" : ""}${abs}`;
+      }
+      if (exponent < 0) return `${sign}0.${"0".repeat(-exponent - 1)}${digits}`;
+      if (digits.length <= exponent + 1) return `${sign}${digits}${"0".repeat(exponent + 1 - digits.length)}.0`;
+      return `${sign}${digits.slice(0, exponent + 1)}.${digits.slice(exponent + 1)}`;
+    }
+
+    function pyG(value) {
+      if (value === 0) return "0";
+      const exponent = Math.floor(Math.log10(Math.abs(value)));
+      if (exponent < -4 || exponent >= 6) {
+        const [mantissa, exp] = value.toExponential(5).split("e");
+        const trimmed = mantissa.includes(".") ? mantissa.replace(/\.?0+$/, "") : mantissa;
+        const abs = Math.abs(Number(exp));
+        return `${trimmed}e${Number(exp) < 0 ? "-" : "+"}${abs < 10 ? "0" : ""}${abs}`;
+      }
+      const fixed = Number(value.toPrecision(6)).toString();
+      return fixed;
+    }
+
+    const groupedInt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+    const plainInt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0, useGrouping: false });
+    const fmtGrouped = (value) => groupedInt.format(value);
+    const fmtPlain = (value) => plainInt.format(value);
+
+    function readInputs() {
+      const parsed = {};
+      for (const [key, entry] of Object.entries(entries)) parsed[key] = pyFloat(entry.value);
+      if (!Object.values(parsed).every((value) => Number.isFinite(value))) {
+        throw new Error("All inputs must be finite numbers.");
+      }
+
+      for (const [key, label] of [["denovo_p", "P(de novo | pathogenic)"], ["missense_p", "P(missense | pathogenic)"]]) {
+        if (!(parsed[key] > 0 && parsed[key] < 1)) throw new Error(`${label} must be greater than 0 and less than 1.`);
+      }
+      for (const [key, label] of [["denovo_n", "De novo sample size"], ["missense_n", "Missense sample size"], ["simulations", "Simulation count"]]) {
+        if (parsed[key] < 1 || !Number.isInteger(parsed[key])) throw new Error(`${label} must be a positive whole number.`);
+      }
+      if (parsed.simulations < 1000 || parsed.simulations > 2000000) {
+        throw new Error("Simulation count must be between 1,000 and 2,000,000.");
+      }
+      if (!(parsed.credible_interval >= 50 && parsed.credible_interval < 100)) {
+        throw new Error("Credible interval must be at least 50% and less than 100%.");
+      }
+      for (const [label, medianKey, lowKey, highKey] of [
+        ["Prevalence", "prev_median", "prev_low", "prev_high"],
+        ["Allele burden", "burden_median", "burden_low", "burden_high"]
+      ]) {
+        if (Math.min(parsed[medianKey], parsed[lowKey], parsed[highKey]) <= 0) {
+          throw new Error(`${label} values must all be positive.`);
+        }
+        if (parsed[highKey] <= parsed[medianKey]) {
+          throw new Error(`${label} upper bound must be greater than its median.`);
+        }
+      }
+      if (parsed.log_mu_sd < 0) throw new Error("Mutation-rate SD cannot be negative.");
+      return parsed;
+    }
+
+    function calculate() {
+      let inputs;
+      try {
+        inputs = readInputs();
+      } catch (error) {
+        showMessage("Check model inputs", error.message);
+        return;
+      }
+
+      $("calculate-button").disabled = true;
+      $("input-status").textContent = "Running…";
+      $("result-status").textContent = "Simulating Monte Carlo draws…";
+      $("progress").classList.add("active");
+
+      const blobUrl = URL.createObjectURL(new Blob([$("worker-source").textContent], { type: "text/javascript" }));
+      worker = new Worker(blobUrl);
+      URL.revokeObjectURL(blobUrl);
+      worker.onmessage = (event) => {
+        worker.terminate();
+        if (event.data.error) showError(event.data.error);
+        else showResult(inputs, event.data.result);
+      };
+      worker.onerror = (event) => {
+        worker.terminate();
+        showError(event.message || "The simulation could not be started.");
+      };
+      worker.postMessage({
+        denovoP: inputs.denovo_p, denovoN: inputs.denovo_n,
+        missenseP: inputs.missense_p, missenseN: inputs.missense_n,
+        prevMedian: inputs.prev_median, prevHigh: inputs.prev_high,
+        logMuMean: inputs.log_mu_mean, logMuSd: inputs.log_mu_sd,
+        burdenMedian: inputs.burden_median, burdenHigh: inputs.burden_high,
+        simulations: inputs.simulations, credibleInterval: inputs.credible_interval
+      });
+    }
+
+    function stopProgress() {
+      $("progress").classList.remove("active");
+      $("calculate-button").disabled = false;
+    }
+
+    function showResult(inputs, result) {
+      stopProgress();
+      $("input-status").textContent = "Complete";
+      $("result-status").textContent = `${fmtGrouped(result.accepted)} valid draws · ${fmtGrouped(result.discarded)} discarded`;
+      const intervalPercent = pyG(result.credibility * 100);
+      $("op-hdi-title").textContent = `${intervalPercent}% HDI for OP`;
+      $("points-hdi-title").textContent = `${intervalPercent}% HDI for points`;
+      $("median-op").textContent = fmtGrouped(result.medianOp);
+      $("op-hdi").textContent = `[${fmtGrouped(result.opHdi[0])}, ${fmtGrouped(result.opHdi[1])}]`;
+      $("median-points").textContent = result.medianPoints.toFixed(2);
+      $("points-hdi").textContent = `[${result.pointsHdi[0].toFixed(2)}, ${result.pointsHdi[1].toFixed(2)}]`;
+      for (const [threshold, probability] of result.thresholdProbabilities) {
+        $(`prob-${threshold}`).textContent = `${(probability * 100).toFixed(1)}%`;
+        $(`bar-${threshold}`).style.width = `${probability * 100}%`;
+      }
+      $("discard-note").textContent = result.discarded
+        ? `${fmtGrouped(result.discarded)} of ${fmtGrouped(result.nSim)} draws (${(result.discarded / result.nSim * 100).toFixed(2)}%) were discarded because they implied a non-positive benign-variant rate.`
+        : `No draws were discarded. All ${fmtGrouped(result.accepted)} simulations were retained.`;
+      latestReport = makeReport(inputs, result);
+    }
+
+    function showError(message) {
+      stopProgress();
+      $("input-status").textContent = "";
+      $("result-status").textContent = "Calculation not completed";
+      showMessage("Calculation error", message);
+    }
+
+    function makeReport(inputs, result) {
+      const intervalPercent = pyG(result.credibility * 100);
+      const lines = [
+        "Eric's NF1 Odds-of-Pathogenicity (OP) Calculator",
+        "Monte Carlo credible interval results",
+        "",
+        `P(de novo | pathogenic): ${pyRepr(inputs.denovo_p)}; n=${fmtPlain(inputs.denovo_n)}`,
+        `P(missense | pathogenic): ${pyRepr(inputs.missense_p)}; n=${fmtPlain(inputs.missense_n)}`,
+        `NF1 prevalence: median=${pyRepr(inputs.prev_median)}; plausible range=[${pyRepr(inputs.prev_low)}, ${pyRepr(inputs.prev_high)}]`,
+        `log10 mutation rate: mean=${pyRepr(inputs.log_mu_mean)}; SD=${pyRepr(inputs.log_mu_sd)}`,
+        `Non-pathogenic allele burden: median=${pyRepr(inputs.burden_median)}; plausible range=[${pyRepr(inputs.burden_low)}, ${pyRepr(inputs.burden_high)}]`,
+        `Monte Carlo draws: ${result.nSim}`,
+        `Credible interval: ${intervalPercent}%`,
+        "",
+        `Median OP: ${fmtPlain(result.medianOp)}`,
+        `${intervalPercent}% HDI for OP: [${fmtPlain(result.opHdi[0])}, ${fmtPlain(result.opHdi[1])}]`,
+        `Median points: ${result.medianPoints.toFixed(2)}`,
+        `${intervalPercent}% HDI for points: [${result.pointsHdi[0].toFixed(2)}, ${result.pointsHdi[1].toFixed(2)}]`
+      ];
+      for (const [threshold, probability] of result.thresholdProbabilities) {
+        lines.push(`P(points >= ${threshold}): ${(probability * 100).toFixed(1)}%`);
+      }
+      lines.push(
+        `Accepted draws: ${result.accepted}`,
+        `Discarded draws: ${result.discarded} (${(result.discarded / result.nSim * 100).toFixed(2)}%)`,
+        "",
+        "Lognormal SD is ln(upper bound / median) / 1.96, matching the Python model."
+      );
+      return lines.join("\n");
+    }
+
+    function saveReport() {
+      if (!latestReport) {
+        showMessage("No results yet", "Run the calculation before saving a report.");
+        return;
+      }
+      const url = URL.createObjectURL(new Blob([latestReport], { type: "text/plain;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "nf1_op_credible_interval_results.txt";
+      link.click();
+      URL.revokeObjectURL(url);
+      $("input-status").textContent = "Report saved";
+    }
+
+    async function copyReport() {
+      if (!latestReport) {
+        showMessage("No results yet", "Run the calculation before copying a report.");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(latestReport);
+        $("input-status").textContent = "Report copied";
+      } catch {
+        showMessage("Copy not completed", "Clipboard access was blocked by the browser. Use Save report instead.");
+      }
+    }
+
+    function resetDefaults() {
+      for (const [, fields] of FIELDS) {
+        for (const [, key, defaultValue] of fields) entries[key].value = defaultValue;
+      }
+      for (const id of ["median-op", "op-hdi", "median-points", "points-hdi"]) $(id).textContent = "-";
+      for (const threshold of [8, 6, 4, 2]) {
+        $(`prob-${threshold}`).textContent = "-";
+        $(`bar-${threshold}`).style.width = "0";
+      }
+      latestReport = "";
+      $("op-hdi-title").textContent = "95% HDI for OP";
+      $("points-hdi-title").textContent = "95% HDI for points";
+      $("discard-note").textContent = "Results will appear here after the calculation.";
+      $("result-status").textContent = "Waiting for calculation";
+      $("input-status").textContent = "Defaults restored";
+    }
+
+    buildFields();
+    $("calculate-button").addEventListener("click", calculate);
+    $("reset-button").addEventListener("click", resetDefaults);
+    $("save-button").addEventListener("click", saveReport);
+    $("copy-button").addEventListener("click", copyReport);
+  </script>
+</body>
+</html>
