@@ -23,6 +23,9 @@
     h1 { margin: 4px 0 3px; font: 700 25px Georgia, serif; }
     header p { margin: 0; color: var(--muted); font-size: 12px; }
     .badge { background: var(--white); color: var(--green-dark); font: 700 16px Georgia, serif; border: 1px solid #777; padding: 10px 14px; }
+    .side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    a.help { color: var(--green); font-size: 12px; font-weight: 700; text-decoration: underline; }
+    a.help:hover { color: var(--green-dark); }
     .layout { display: grid; grid-template-columns: 11fr 9fr; gap: 20px; padding-top: 4px; align-items: start; }
     .input-panel { background: var(--white); padding: 16px; }
     .input-panel h2 { margin: 0 0 2px; font-size: 19px; }
@@ -82,7 +85,10 @@
         <h1>Eric's NF1 Odds of Pathogenicity Calculator</h1>
         <p>Propagate uncertainty through de novo missense evidence and inspect OP and ACMG/ClinGen points.</p>
       </div>
-      <div class="badge">NF1</div>
+      <div class="side">
+        <div class="badge">NF1</div>
+        <a class="help" href="nf1_op_credible_interval_README.pdf" target="_blank" rel="noopener">Help (README.pdf)</a>
+      </div>
     </header>
 
     <div class="layout">
